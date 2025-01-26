@@ -1,7 +1,7 @@
 // pages/Dashboard.js
 import React from 'react';
-import ProgressCard from '../components/ProgressCard';
-import RecommendedCoursesCard from '../components/RecommendedCoursesCard';
+import ProgressCard from './ProgressCard';
+import RecommendedCoursesCard from './RecommendedCoursesCard';
 
 const Dashboard = () => {
   return (
