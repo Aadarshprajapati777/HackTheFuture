@@ -11,12 +11,10 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Middleware
 app.use(cors());
 app.use(express.json());
 
 
-// Initialize AI
 let genAI;
 try {
   genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
@@ -25,7 +23,6 @@ try {
 }
 
 
-// Database Connection
 const connectDB = async () => {
   try {
     await mongoose.connect(process.env.MONGODB_ATLAS_URL, {
@@ -206,7 +203,55 @@ class DoubtSolverBot {
   }
 }
 
-// Career Guidance Module
+
+
+// Gamification Service
+class GamificationService {
+    calculatePoints(activities) {
+      return activities.reduce((points, activity) => {
+        switch (activity.type) {
+          case 'quiz_complete': return points + 50;
+          case 'lesson_complete': return points + 20;
+          case 'challenge_win': return points + 100;
+          default: return points;
+        }
+      }, 0);
+    }
+  
+    generateBadge(achievements) {
+      try {
+        const totalPoints = this.calculatePoints(achievements);
+  
+        const badge = this.invokeGenerativeAI(totalPoints);
+  
+        return badge || (totalPoints > 500 ? 'Learning Master' : 'Beginner Learner');
+      } catch (error) {
+        console.error('AI model failed:', error);
+  
+        try {
+          const totalPoints = this.calculatePoints(achievements);
+          const retryBadge = this.invokeGenerativeAI(totalPoints);
+          return retryBadge || (totalPoints > 500 ? 'Learning Master' : 'Beginner Learner');
+        } catch (retryError) {
+          console.error('Retry failed:', retryError);
+  
+          const totalPoints = this.calculatePoints(achievements);
+          return totalPoints > 500 ? 'Learning Master' : 'Beginner Learner';
+        }
+      }
+    }
+  
+    invokeGenerativeAI(totalPoints) {
+      if (Math.random() > 0.7) {
+        throw new Error('AI failure');
+      }
+  
+      return totalPoints > 500
+        ? `AI Generated Badge: Learning Master`
+        : `AI Generated Badge: Beginner Learner`;
+    }
+  }
+
 class CareerGuidanceService {
     async suggestCareerPaths(userProfile, learningHistory) {
       const prompt = `Analyze and suggest career paths:
@@ -238,7 +283,6 @@ class CareerGuidanceService {
         }
       }
   
-      // Fallback response
       console.warn("Falling back to basic career guidance suggestions.");
   
       return `
@@ -251,15 +295,13 @@ class CareerGuidanceService {
   }
 
   
-  
-// Service Instances
+
 const learningPathGenerator = new LearningPathGenerator();
 const assessmentEngine = new AssessmentEngine();
 const doubtSolverBot = new DoubtSolverBot();
 const gamificationService = new GamificationService();
 const careerGuidanceService = new CareerGuidanceService();
 
-// Authentication Routes
 app.post('/api/register', async (req, res) => {
   try {
     const { username, email, password, profile } = req.body;
@@ -342,7 +384,6 @@ app.post('/api/login', async (req, res) => {
 });
 
 
-// Authentication Middleware
 const authMiddleware = (req, res, next) => {
   try {
     const token = req.header('Authorization')?.replace('Bearer ', '');
@@ -362,7 +403,6 @@ const authMiddleware = (req, res, next) => {
   }
 };
 
-// Learning Path Route
 app.post('/api/learning-path', authMiddleware, async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
@@ -397,7 +437,6 @@ app.post('/api/learning-path', authMiddleware, async (req, res) => {
   }
 });
 
-// Assessment Route
 app.post('/api/assessment', authMiddleware, async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
@@ -425,7 +464,6 @@ app.post('/api/assessment', authMiddleware, async (req, res) => {
   }
 });
 
-// Doubt Solver Route
 app.post('/api/doubt-solver', authMiddleware, async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
@@ -461,7 +499,6 @@ app.post('/api/doubt-solver', authMiddleware, async (req, res) => {
   }
 });
 
-// Gamification Route
 app.post('/api/gamification', authMiddleware, async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
@@ -501,7 +538,6 @@ app.post('/api/gamification', authMiddleware, async (req, res) => {
   }
 });
 
-// Career Guidance Route
 app.post('/api/career-guidance', authMiddleware, async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
@@ -530,7 +566,6 @@ app.post('/api/career-guidance', authMiddleware, async (req, res) => {
 });
 
 
-// WebSocket for Group Learning
 const initWebSocket = () => {
   const wss = new WebSocket.Server({ port: 8080 });
 
@@ -557,7 +592,6 @@ const initWebSocket = () => {
   });
 };
 
-// Start Server
 const startServer = async () => {
   try {
     await connectDB();
